@@ -26,4 +26,4 @@ jobs:
         run: echo "${{ secrets.CONFIG_TOML }}" > config.toml
 
       - name: Deploy
-        run: docker-compose up -d --build
+        run: DOCKER_BUILDKIT=1 docker-compose up -d --build
