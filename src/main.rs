@@ -70,6 +70,7 @@ struct MkNote {
 
 #[derive(Clone, Deserialize)]
 struct Secret {
+    webhook_path: String,
     webhook_secret: String,
     misskey_insrance: String,
     misskey_api_secret: String,
@@ -81,10 +82,10 @@ async fn main() -> Result<()> {
     env_logger::init();
 
     let secret_str = read_to_string("./config.toml")?;
-    let secret = toml::from_str(&secret_str)?;
+    let secret: Secret = toml::from_str(&secret_str)?;
 
     let server = Router::new()
-        .route("/github/cffnpwr/ghemn/", post(handler))
+        .route(&secret.webhook_path, post(handler))
         .with_state(secret);
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
 
