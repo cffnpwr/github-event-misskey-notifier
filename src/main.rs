@@ -4,7 +4,7 @@ use ring::{
     error::Unspecified,
     hmac::{self, HMAC_SHA256},
 };
-use std::{env, fs::read_to_string, net::SocketAddr};
+use std::{env, fs::read_to_string, net::SocketAddr, num::ParseIntError};
 
 use axum::{
     extract::State,
@@ -135,8 +135,6 @@ async fn handler(
 
         warn!("Signature unmatch");
     }
-
-    warn!("Don't have \"X-Hub-Signature-256\" header");
     (StatusCode::UNAUTHORIZED, Json(()))
 }
 
@@ -146,8 +144,15 @@ fn verify_signature(payload: String, hash: String, secret: &String) -> Result<()
     hmac::verify(
         &key,
         payload.as_bytes(),
-        hash.replace("sha256=", "").as_bytes(),
+        &decode_hex(hash.replace("sha256=", "").as_str()).unwrap(),
     )
+}
+
+fn decode_hex(s: &str) -> Result<Vec<u8>, ParseIntError> {
+    (0..s.len())
+        .step_by(2)
+        .map(|i| u8::from_str_radix(&s[i..i + 2], 16))
+        .collect()
 }
 
 async fn post_note(mut body: MkNote, secret: Secret) -> Result<()> {
