@@ -113,7 +113,7 @@ async fn handler(
             let event = headers.get("X-GitHub-Event").unwrap().to_str().unwrap();
 
             let msg = match event {
-                "issue" => build_issue_event_note(payload),
+                "issues" => build_issue_event_note(payload),
                 "issue_comment" => build_issue_comment_event_note(payload),
                 "pull_request" => build_pull_request_event_note(payload),
                 "release" => build_release_event_note(payload),
