@@ -83,7 +83,9 @@ async fn main() -> Result<()> {
     let secret_str = read_to_string("./config.toml")?;
     let secret = toml::from_str(&secret_str)?;
 
-    let server = Router::new().route("/", post(handler)).with_state(secret);
+    let server = Router::new()
+        .route("/github/cffnpwr/ghemn/", post(handler))
+        .with_state(secret);
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
 
     info!("Listening on {}", addr);
@@ -128,7 +130,11 @@ async fn handler(
                 Err(_) => return (StatusCode::NO_CONTENT, Json(())),
             }
         }
+
+        warn!("Signature unmatch");
     }
+
+    warn!("Don't have \"X-Hub-Signature-256\" header");
     (StatusCode::UNAUTHORIZED, Json(()))
 }
 
