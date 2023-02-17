@@ -64,7 +64,7 @@ struct GHPayload {
 #[derive(Serialize, Deserialize)]
 struct MkNote {
     i: Option<String>,
-    cw: String,
+    cw: Option<String>,
     text: String,
 }
 
@@ -194,7 +194,7 @@ fn build_issue_event_note(payload: GHPayload) -> Result<MkNote> {
 
     Ok(MkNote {
         i: None,
-        cw: comment,
+        cw: Some(comment),
         text: body,
     })
 }
@@ -208,15 +208,19 @@ fn build_issue_comment_event_note(payload: GHPayload) -> Result<MkNote> {
         _ => return Err(anyhow!("")),
     };
 
-    let comment = format!(
-        "{} [#{}: {}]({})",
-        title, issue.number, issue.title, issue_comment.html_url
+    let body = format!(
+        "{} [#{}: {}]({})\n{}「{}」",
+        title,
+        issue.number,
+        issue.title,
+        issue_comment.html_url,
+        issue_comment.user.login,
+        issue_comment.body
     );
-    let body = format!("{}「{}」", issue_comment.user.login, issue_comment.body);
 
     Ok(MkNote {
         i: None,
-        cw: comment,
+        cw: None,
         text: body,
     })
 }
@@ -245,7 +249,7 @@ fn build_pull_request_event_note(payload: GHPayload) -> Result<MkNote> {
 
     Ok(MkNote {
         i: None,
-        cw: comment,
+        cw: Some(comment),
         text: body,
     })
 }
@@ -261,7 +265,7 @@ fn build_release_event_note(payload: GHPayload) -> Result<MkNote> {
 
     Ok(MkNote {
         i: None,
-        cw: comment,
+        cw: Some(comment),
         text: body,
     })
 }
