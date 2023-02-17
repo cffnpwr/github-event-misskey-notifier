@@ -64,7 +64,7 @@ struct GHPayload {
 #[derive(Serialize, Deserialize)]
 struct MkNote {
     i: Option<String>,
-    comment: String,
+    cw: String,
     text: String,
 }
 
@@ -103,33 +103,32 @@ async fn handler(
     body: String,
 ) -> (StatusCode, Json<()>) {
     if let Some(hash) = headers.get("X-Hub-Signature-256") {
-        let payload = serde_json::from_str(&body).unwrap();
-
         if let core::result::Result::Ok(_) = verify_signature(
-            body,
+            &body,
             hash.to_str().unwrap().to_owned(),
             &secret.webhook_secret,
         ) {
             let event = headers.get("X-GitHub-Event").unwrap().to_str().unwrap();
+            if let core::result::Result::Ok(payload) = serde_json::from_str(&body) {
+                let msg = match event {
+                    "issues" => build_issue_event_note(payload),
+                    "issue_comment" => build_issue_comment_event_note(payload),
+                    "pull_request" => build_pull_request_event_note(payload),
+                    "release" => build_release_event_note(payload),
+                    _ => return (StatusCode::NO_CONTENT, Json(())),
+                };
 
-            let msg = match event {
-                "issues" => build_issue_event_note(payload),
-                "issue_comment" => build_issue_comment_event_note(payload),
-                "pull_request" => build_pull_request_event_note(payload),
-                "release" => build_release_event_note(payload),
-                _ => return (StatusCode::NO_CONTENT, Json(())),
-            };
+                match msg {
+                    core::result::Result::Ok(body) => match post_note(body, secret).await {
+                        core::result::Result::Ok(_) => return (StatusCode::CREATED, Json(())),
+                        Err(e) => {
+                            error!("{}", e.to_string());
 
-            match msg {
-                core::result::Result::Ok(body) => match post_note(body, secret).await {
-                    core::result::Result::Ok(_) => return (StatusCode::CREATED, Json(())),
-                    Err(e) => {
-                        error!("{}", e.to_string());
-
-                        return (StatusCode::INTERNAL_SERVER_ERROR, Json(()));
-                    }
-                },
-                Err(_) => return (StatusCode::NO_CONTENT, Json(())),
+                            return (StatusCode::INTERNAL_SERVER_ERROR, Json(()));
+                        }
+                    },
+                    Err(_) => return (StatusCode::NO_CONTENT, Json(())),
+                }
             }
         }
 
@@ -138,7 +137,7 @@ async fn handler(
     (StatusCode::UNAUTHORIZED, Json(()))
 }
 
-fn verify_signature(payload: String, hash: String, secret: &String) -> Result<(), Unspecified> {
+fn verify_signature(payload: &String, hash: String, secret: &String) -> Result<(), Unspecified> {
     let key = hmac::Key::new(HMAC_SHA256, secret.as_bytes());
 
     hmac::verify(
@@ -170,7 +169,7 @@ async fn post_note(mut body: MkNote, secret: Secret) -> Result<()> {
         .await?
         .status();
 
-    if let StatusCode::CREATED = status {
+    if let StatusCode::OK = status {
         Ok(())
     } else {
         Err(anyhow!("status: {}", status))
@@ -195,7 +194,7 @@ fn build_issue_event_note(payload: GHPayload) -> Result<MkNote> {
 
     Ok(MkNote {
         i: None,
-        comment,
+        cw: comment,
         text: body,
     })
 }
@@ -217,7 +216,7 @@ fn build_issue_comment_event_note(payload: GHPayload) -> Result<MkNote> {
 
     Ok(MkNote {
         i: None,
-        comment,
+        cw: comment,
         text: body,
     })
 }
@@ -246,7 +245,7 @@ fn build_pull_request_event_note(payload: GHPayload) -> Result<MkNote> {
 
     Ok(MkNote {
         i: None,
-        comment,
+        cw: comment,
         text: body,
     })
 }
@@ -262,7 +261,7 @@ fn build_release_event_note(payload: GHPayload) -> Result<MkNote> {
 
     Ok(MkNote {
         i: None,
-        comment,
+        cw: comment,
         text: body,
     })
 }
