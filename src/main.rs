@@ -100,13 +100,13 @@ async fn main() -> Result<()> {
 async fn handler(
     headers: HeaderMap,
     State(secret): State<Secret>,
-    payload: String,
+    body: String,
 ) -> (StatusCode, Json<()>) {
     if let Some(hash) = headers.get("X-Hub-Signature-256") {
-        let payload = serde_json::from_str(&payload).unwrap();
+        let payload = serde_json::from_str(&body).unwrap();
 
         if let core::result::Result::Ok(_) = verify_signature(
-            serde_json::to_string(&payload).unwrap(),
+            body,
             hash.to_str().unwrap().to_owned(),
             &secret.webhook_secret,
         ) {
