@@ -84,7 +84,7 @@ async fn main() -> Result<()> {
     let secret = toml::from_str(&secret_str)?;
 
     let server = Router::new().route("/", post(handler)).with_state(secret);
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
 
     info!("Listening on {}", addr);
     axum::Server::bind(&addr)
