@@ -187,15 +187,14 @@ fn build_issue_event_note(payload: GHPayload) -> Result<MkNote> {
         _ => return Err(anyhow!("")),
     };
 
-    let comment = format!(
-        "{} [#{}: {}]({})",
-        title, issue.number, issue.title, issue.html_url
+    let body = format!(
+        "{} [#{}: {}]({})\n{}",
+        title, issue.number, issue.title, issue.html_url, issue.body
     );
-    let body = format!("{}", issue.body);
 
     Ok(MkNote {
         i: None,
-        cw: Some(comment),
+        cw: None,
         text: body,
     })
 }
