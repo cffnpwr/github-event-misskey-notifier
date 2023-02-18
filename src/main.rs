@@ -241,15 +241,14 @@ fn build_pull_request_event_note(payload: GHPayload) -> Result<MkNote> {
         _ => return Err(anyhow!("")),
     };
 
-    let comment = format!(
-        "{} [#{}: {}]({})",
-        title, pull_request.number, pull_request.title, pull_request.html_url
+    let body = format!(
+        "{} [#{}: {}]({})\n{}",
+        title, pull_request.number, pull_request.title, pull_request.html_url, pull_request.body
     );
-    let body = format!("{}", pull_request.body);
 
     Ok(MkNote {
         i: None,
-        cw: Some(comment),
+        cw: None,
         text: body,
     })
 }
@@ -257,15 +256,17 @@ fn build_pull_request_event_note(payload: GHPayload) -> Result<MkNote> {
 fn build_release_event_note(payload: GHPayload) -> Result<MkNote> {
     let release = payload.release.unwrap();
 
-    let comment = match payload.action.as_str() {
-        "published" => format!("🥳 [{}]({}) released!!", release.tag_name, release.html_url),
+    let body = match payload.action.as_str() {
+        "published" => format!(
+            "🥳 [{}]({}) released!!\n{}",
+            release.tag_name, release.html_url, release.body
+        ),
         _ => return Err(anyhow!("")),
     };
-    let body = format!("{}", release.body);
 
     Ok(MkNote {
         i: None,
-        cw: Some(comment),
+        cw: None,
         text: body,
     })
 }
